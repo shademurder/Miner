@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.button1 = new System.Windows.Forms.Button();
-            this.miner1 = new Miner.Miner();
+            this.miner1 = new Miner();
             this.SuspendLayout();
             // 
             // button1
@@ -72,7 +72,7 @@
 
         #endregion
         private System.Windows.Forms.Button button1;
-        private Miner.Miner miner1;
+        private Miner miner1;
     }
 }
 
