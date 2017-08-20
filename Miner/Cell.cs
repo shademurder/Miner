@@ -5,13 +5,14 @@ using System.Windows.Forms;
 
 namespace Miner
 {
-    class Cell : Control
+    class Cell : UserControl
     {
-        private int _borderSize = 1;
-        private int _cellSize = 20;
+        private float _borderSize = 1;
+        private float _cellSize = 20;
         private bool _clicked = false;
         private bool _pressed = false;
         private bool _selected = false;
+        private int _gradientAngle = 45;
         private Color _startGradientColor;
         private Color _endGradientColor;
         private Color _clickStartGradientColor;
@@ -19,8 +20,12 @@ namespace Miner
         private Color _selectStartGradientColor;
         private Color _selectEndGradientColor;
         private Color _borderColor;
+        private double _brightnessCoefficient = 1.3;
+        private short _weight = 0;
+        private CellType _type = CellType.Empty;
+        private Mine _mine = null;
+        private MarkType _markType = MarkType.Empty;
 
-        //TODO после каждого изменения увета в полях делать Refresh
         public Color StartGradientColor
         {
             get { return _startGradientColor; }
@@ -75,7 +80,15 @@ namespace Miner
                 Refresh();
             }
         }
-        public int GradientAngle { get; set; } = 45;
+        public int GradientAngle
+        {
+            get { return _gradientAngle; }
+            set
+            {
+                _gradientAngle = value % 360;
+                Refresh();
+            }
+        }
 
         public Color BorderColor
         {
@@ -86,32 +99,38 @@ namespace Miner
                 Refresh();
             }
         }
-        public int BorderSize
+        public float BorderSize
         {
             get { return _borderSize; }
             set
             {
                 if (value < 0) return;
                 _borderSize = value;
-                Size = new Size(CellSize + value, CellSize + value);
-                Refresh();
+                Size = new Size((int)Math.Ceiling((CellSize + 2 * value)), (int)Math.Ceiling(CellSize + 2 * value));
             }
         }
-        public int CellSize
+        public float CellSize
         {
             get { return _cellSize; }
             set
             {
-                if (value < 20) return;
+                if (value < 0) return;
                 _cellSize = value;
-                Size = new Size(value + BorderSize, value + BorderSize);
-                Refresh();
+                Size = new Size((int)Math.Ceiling((value + 2 * BorderSize)), (int)Math.Ceiling(value + 2 * BorderSize));
             }
         }
 
         public Point Position { get; set; }
 
-        public double BrightnessCoefficient { get; set; } = 1.3;
+        public double BrightnessCoefficient
+        {
+            get { return _brightnessCoefficient; }
+            set
+            {
+                _brightnessCoefficient = value;
+                Refresh();
+            }
+        }
 
         public bool Clicked
         {
@@ -153,11 +172,72 @@ namespace Miner
             }
         }
 
+        public short Weight { get => _weight; set => _weight = value; }
+        internal CellType Type { get => _type; set => _type = value; }
+        internal Mine Mine { get => _mine; set => _mine = value; }
+
         public event Action<Point, bool> CellSelect;
         public event Action<Point, bool> CellPress;
         public event Action<Point, bool> CellClick;
 
-        public Cell(Color startGradientColor, Color endGradientColor, Color borderColor, int borderSize, int size, Point position)
+        public Cell(Color startGradientColor, Color endGradientColor, Color borderColor, float borderSize, float size, Point position)
+        {
+            ChangeColors(startGradientColor, endGradientColor, false);
+            _borderColor = borderColor;
+            _borderSize = borderSize;
+            _cellSize = size;
+            Position = position;
+            Size = new Size((int)Math.Ceiling((CellSize + 2 * BorderSize)), (int)Math.Ceiling(CellSize + 2 * BorderSize));
+            DoubleBuffered = true;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            float sizeF = CellSize + 2 * BorderSize;
+            var pen = new Pen(BorderColor, BorderSize);
+            var borderBrush = new SolidBrush(BorderColor);
+            e.Graphics.FillRectangle(borderBrush, 0, 0, sizeF, sizeF);
+            //e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, CellSize + BorderSize, CellSize + BorderSize));
+            //e.Graphics.DrawRectangle(pen, 0, 0, CellSize + BorderSize, CellSize + BorderSize);
+            var state = _clicked && _selected || _pressed;
+             //var brush = new LinearGradientBrush(new PointF(0, 0), new PointF(sizeF, sizeF),
+            var brush = new LinearGradientBrush(new RectangleF(0, 0, CellSize, CellSize),//(0, 0, CellSize, CellSize)
+                state ? ClickStartGradientColor : _selected ? SelectStartGradientColor : StartGradientColor,
+                state ? ClickEndGradientColor : _selected ? SelectEndGradientColor : EndGradientColor, 
+                GradientAngle);
+            e.Graphics.FillRectangle(brush, BorderSize, BorderSize, CellSize, CellSize);
+            var rectangle = new RectangleF(BorderSize + CellSize * 0.1F, BorderSize + CellSize * 0.1F, CellSize * 0.8F, CellSize * 0.8F);
+            StringFormat sf = StringFormat.GenericDefault;
+            sf.Alignment = StringAlignment.Center;
+            Font font = new Font("Arial", _cellSize * 0.6F);
+            if (_pressed)
+            {
+                if (_type == CellType.Mine)
+                {
+                    e.Graphics.DrawImage(Mine.Image, rectangle);
+                }
+                else if(_type == CellType.Empty)
+                {
+                    e.Graphics.DrawString(_weight.ToString(), font, new SolidBrush(Color.Red), rectangle, sf);
+                }
+            }
+            else
+            {
+                if (_markType == MarkType.Flag)
+                {
+                    var image = Properties.Resources.Flag1;
+                    e.Graphics.DrawImage(image, rectangle);
+                }
+                else if (_markType == MarkType.Unknown)
+                {
+                    e.Graphics.DrawString("?", font, new SolidBrush(Color.Red), rectangle, sf);
+                }
+            }
+            //e.Graphics.DrawRectangle(pen, 0, 0, (int)Math.Round(sizeF), (int)Math.Round(sizeF));
+            base.OnPaint(e);
+        }
+
+        public void ChangeColors(Color startGradientColor, Color endGradientColor, bool refresh)
         {
             _startGradientColor = startGradientColor;
             _endGradientColor = endGradientColor;
@@ -168,26 +248,10 @@ namespace Miner
             _clickEndGradientColor = Color.FromArgb(endColorless, endColorless, endColorless);
             _selectStartGradientColor = ChangeBrightness(startGradientColor, BrightnessCoefficient);
             _selectEndGradientColor = ChangeBrightness(endGradientColor, BrightnessCoefficient);
-            _borderColor = borderColor;
-            _borderSize = borderSize;
-            _cellSize = size;
-            Position = position;
-            Size = new Size(CellSize + 2 * BorderSize, CellSize + 2 * BorderSize);
-            MinimumSize = new Size(20, 20);
-            DoubleBuffered = true;
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var pen = new Pen(BorderColor, BorderSize);
-            e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, CellSize + BorderSize, CellSize + BorderSize));
-            var state = _clicked && _selected || _pressed;
-            var brush = new LinearGradientBrush(new Rectangle(0, 0, CellSize, CellSize),
-                state ? ClickStartGradientColor : _selected ? SelectStartGradientColor : StartGradientColor,
-                state ? ClickEndGradientColor : _selected ? SelectEndGradientColor : EndGradientColor, 
-                GradientAngle);
-            e.Graphics.FillRectangle(brush, BorderSize, BorderSize, CellSize, CellSize);
-            base.OnPaint(e);
+            if(refresh)
+            {
+                Refresh();
+            }
         }
 
         private Color ChangeBrightness(Color color, double coefficient)
@@ -204,6 +268,24 @@ namespace Miner
             {
                 _clicked = true;
                 Capture = false;
+            }
+            if(e.Button == MouseButtons.Right)
+            {
+                if(!_pressed)
+                {
+                    if(_markType == MarkType.Empty)
+                    {
+                        _markType = MarkType.Flag;
+                    }
+                    else if(_markType == MarkType.Flag)
+                    {
+                        _markType = MarkType.Unknown;
+                    }
+                    else
+                    {
+                        _markType = MarkType.Empty;
+                    }
+                }
             }
             Refresh();
             base.OnMouseDown(e);
@@ -244,33 +326,11 @@ namespace Miner
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            if (Size.Width != Size.Height)
-            {
-                Size = new Size(Size.Width, Size.Width);
-            }
-            if (BorderSize == 0)
-            {
-                if (CellSize != Size.Width)
-                {
-                    CellSize = Size.Width;
-                }
-            }
-            else
-            {
-                var proportions = (double)BorderSize/CellSize;
-                var newBorderSize = (int)(proportions * Size.Width);
-                if (BorderSize != newBorderSize || CellSize != Size.Width - newBorderSize)
-                {
-                    BorderSize = newBorderSize;
-                    CellSize = Size.Width - BorderSize;
-                }
-            }
-            Location = new Point(Position.X * (CellSize + BorderSize), Position.Y * (CellSize + BorderSize));
+            var step = CellSize + BorderSize;
+            Location = new Point((int)(Position.X * step), (int)(Position.Y * step));
             Refresh();
             base.OnSizeChanged(e);
         }
-
-        //Можно задать клетке начальный и конечный цвет, чтобы рисовать градиент
 
         protected virtual void OnCellSelect(Point point, bool state)
         {

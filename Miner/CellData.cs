@@ -8,7 +8,7 @@
         /// <summary>
         /// Указывает, скрыта клетка или нет
         /// </summary>
-        public bool Hidden { get; set; } = true;
+        //public bool Hidden { get; set; } = true;
         
         /// <summary>
         /// Тип клетки
@@ -24,7 +24,7 @@
         /// <summary>
         /// Состояние клетки для визуализации
         /// </summary>
-        internal CellState State { get; set; } = CellState.Empty;
+        //internal CellState State { get; set; } = CellState.Empty;
 
 
     }

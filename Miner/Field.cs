@@ -1,41 +1,24 @@
-﻿using System.Drawing;
-using System.Net;
+﻿using System;
+using System.Drawing;
 
 namespace Miner
 {
     class Field
     {
-        /*
-        Размерность поля:
-            Высота в клетках
-            Ширина в клетках
-
-
-
-
-        Массив клеток (Cell[,]) - зависит от высоты и ширины
-        Размер клетки (int)
-        Начальный цвет градиента скрытой клетки
-        Конечный цвет градиента скрытой клетки
-        Начальный цвет градиента открытой клетки
-        Конечный цвет градиента открытой клетки
-
-        Предположительно размер бордера = 1/20 от размера ячейки
-        */
-
         public Field(int rows, int columns)
         {
             FieldSize = new Size(columns, rows);
         }
 
-        private int _cellSize = 20;
-        private int _borderSize = 1;
+        private float _cellSize = 20;
+        private float _borderSize = 1;
         private Size _fieldSize = new Size(9, 9);
         private Color _borderColor = Color.Black;
         private Color _startFieldColor = Color.FromArgb(165, 185, 244);
         private Color _endFieldColor = Color.FromArgb(19, 65, 203);
+        private readonly Random random = new Random();
 
-        public int CellSize
+        public float CellSize
         {
             get
             {
@@ -44,19 +27,19 @@ namespace Miner
 
             set
             {
-                _cellSize = value >= 20 ? value : 20;
+                _cellSize = value > 0 ? value : 0;
                 for (var row = 0; row < Cells.GetLength(0); row++)
                 {
                     for (var column = 0; column < Cells.GetLength(1); column++)
                     {
-                        Cells[row, column].CellSize = _cellSize;
+                        Cells[row, column].CellSize = value;
                     }
                 }
             }
         }
         internal Cell[,] Cells { get; set; }
    
-        public int BorderSize
+        public float BorderSize
         {
             get
             {
@@ -71,7 +54,7 @@ namespace Miner
                     {
                         for (var column = 0; column < Cells.GetLength(1); column++)
                         {
-                            Cells[row, column].BorderSize = _borderSize;
+                            Cells[row, column].BorderSize = value;
                         }
                     }
                 }
@@ -92,7 +75,7 @@ namespace Miner
                 {
                     for (var column = 0; column < Cells.GetLength(1); column++)
                     {
-                        Cells[row, column].BorderColor = _borderColor;
+                        Cells[row, column].BorderColor = value;
                     }
                 }
             }
@@ -107,7 +90,7 @@ namespace Miner
             set
             {
                 _startFieldColor = value;
-                Recreate();
+                RedefineField(false);
             }
         }
 
@@ -121,7 +104,7 @@ namespace Miner
             set
             {
                 _endFieldColor = value;
-                Recreate();
+                RedefineField(false);
             }
         }
 
@@ -136,15 +119,15 @@ namespace Miner
             {
                 if (value.Height <= 0 || value.Width <= 0) return;
                 _fieldSize = value;
-                Cells = new Cell[_fieldSize.Height, _fieldSize.Width];
-                Recreate();
+                Cells = new Cell[value.Height, value.Width];
+                RedefineField(true);
             }
         }
 
         /// <summary>
         /// Пересоздаёт все ячейки поля
         /// </summary>
-        private void Recreate()
+        public void RedefineField(bool recreate)
         {
             var steps = Cells.GetLength(0) + Cells.GetLength(1) - 1;
             steps = steps <= 0 ? 1 : steps;
@@ -156,45 +139,145 @@ namespace Miner
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
                     var step = row + column;
-                    Cells[row, column] = new Cell(
-                        Color.FromArgb(StartFieldColor.R + r*step, StartFieldColor.G + g*step,
-                            StartFieldColor.B + b*step),
-                        Color.FromArgb(StartFieldColor.R + r*(step + 1), StartFieldColor.G + g*(step + 1),
-                            StartFieldColor.B + b*(step + 1)),
-                        BorderColor, BorderSize, CellSize, new Point(column, row));
+                    if (recreate)
+                    {
+                        Cells[row, column] = new Cell(
+                            Color.FromArgb(StartFieldColor.R + r * step, StartFieldColor.G + g * step,
+                                StartFieldColor.B + b * step),
+                            Color.FromArgb(StartFieldColor.R + r * (step + 1), StartFieldColor.G + g * (step + 1),
+                                StartFieldColor.B + b * (step + 1)),
+                            BorderColor, BorderSize, CellSize, new Point(column, row));
+                    }
+                    else
+                    {
+                        Cells[row, column].ChangeColors(
+                            Color.FromArgb(StartFieldColor.R + r * step, StartFieldColor.G + g * step,
+                                StartFieldColor.B + b * step),
+                            Color.FromArgb(StartFieldColor.R + r * (step + 1), StartFieldColor.G + g * (step + 1),
+                                StartFieldColor.B + b * (step + 1)),
+                                true);
+                    }
                 }
             }
         }
 
-        public void SetCellSizes(int size)
+        public int CreateMines(int mines, Mine mine)
         {
-            if (BorderSize == 0)
+            var emptyCells = GetEmptyCellCount();
+            //получить количество свободных от мин клеток
+            for(; mines > 0; mines--, emptyCells--)
             {
-                if (CellSize != size)
+                if(!CreateMine(emptyCells, mine))
                 {
-                    CellSize = size;
+                    break;
                 }
             }
-            else
+            CalculateField();
+            //вызвать метод рандомизации одной мины нужное количество раз
+            //если мину поставить не удалось, значит поле заполнено
+            //вернуть количество мин, которые не удалось поставить
+            return mines;
+        }
+
+        private bool CreateMine(int emptyCells, Mine mine)
+        {
+            if(emptyCells == 0)
             {
-                var proportions = (double)BorderSize / CellSize;
-                var newBorderSize = (int)(proportions * size);
-                newBorderSize = newBorderSize == 0 ? 1 : newBorderSize;
-                if (BorderSize != newBorderSize || CellSize != size - newBorderSize)
+                return false;
+            }
+            var randValue = random.Next(emptyCells);
+            for (var row = 0; row < FieldSize.Height; row++)
+            {
+                for (var column = 0; column < FieldSize.Width; column++)
                 {
-                    BorderSize = newBorderSize;
-                    CellSize = size - BorderSize;
+                    if (Cells[row, column].Type != CellType.Mine)
+                    {
+                        if (randValue == 0)
+                        {
+                            SetMine(row, column, mine);
+                            return true;
+                        }
+                        randValue--;
+                    }
                 }
             }
             
-            for (var row = 0; row < Cells.GetLength(0); row++)
+            //срандомить число от 0 до количества свободных клеток
+            //пройти по циклу, уменьшая значение пустых клеток на 1 каждый раз, когда встречается незаминированная клетка
+            //если количество пустых клеток = 0, поставить в это место мину и вернуть true
+            //если цикл кончился,вернуть false
+            return false;
+        }
+
+        private int GetEmptyCellCount()
+        {
+            int count = 0;
+            for (var row = 0; row < FieldSize.Height; row++)
             {
-                for (var column = 0; column < Cells.GetLength(1); column++)
+                for (var column = 0; column < FieldSize.Width; column++)
                 {
-                    Cells[row, column].CellSize = CellSize;
-                    Cells[row, column].BorderSize = BorderSize;
+                    if(Cells[row, column].Type != CellType.Mine)
+                    {
+                        count++;
+                    }
                 }
             }
+            return count;
+        }
+
+        public bool SetMine(int row, int column, Mine mine)
+        {
+            if(Cells.GetLength(0) <= row || row < 0 || Cells.GetLength(1) <= column || column < 0 || Cells[row, column].Type == CellType.Mine)
+            {
+                return false;
+            }
+            Cells[row, column].Type = CellType.Mine;
+            Cells[row, column].Mine = mine;
+            return true;
+        }
+
+        public void CalculateField()
+        {
+            for(var row = 0; row < Cells.GetLength(0); row++)
+            {
+                for(var column = 0; column < Cells.GetLength(1); column++)
+                {
+                    if(Cells[row, column].Type != CellType.Mine)
+                    {
+                        Cells[row, column].Weight = GetCellWeight(row, column);
+                    }
+                }
+            }
+        }
+
+        private short GetCellWeight(int row, int column)
+        {
+            short weight = 0;
+            //for(var x = row < 0 ? 0 : row - 1; x < (row >= Cells.GetLength(0) - 1 ? Cells.GetLength(0) : row + 1); row++)
+            //{
+            //    for(var y = column < 0 ? 0 : column - 1; y < (column >= Cells.GetLength(1) - 1 ? Cells.GetLength(1) : column + 1); column++)
+            //    {
+            //        if(Cells[x, y].Type == CellType.Mine)
+            //        {
+            //            weight++;
+            //        }
+            //    }
+            //}
+            for(var y = row - 1; y <= row + 1; y++)
+            {
+                for(var x = column - 1; x <= column + 1; x++)
+                {
+                    if(x < 0 || y < 0 || x >= Cells.GetLength(1) || y >= Cells.GetLength(0))
+                    {
+                        continue;
+                    }
+                    if(Cells[y, x].Type == CellType.Mine)
+                    {
+                        weight++;
+                    }
+                }
+            }
+            return weight;
         }
     }
 }

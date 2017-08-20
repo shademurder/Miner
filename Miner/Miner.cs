@@ -1,20 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Miner
 {
-    class Miner : Control
+    class Miner : UserControl
     {
         public Miner()
         {
             DoubleBuffered = true;
+            Field = new Field(FieldSize.Height, FieldSize.Width);
             Clear();
         }
 
@@ -25,17 +20,18 @@ namespace Miner
         {
             get
             {
-                return _fieldSize;
+                return Field.FieldSize;
             }
             set
             {
                 if (value.Height <= 0 || value.Width <= 0) return;
-                _fieldSize = value;
+                Field.FieldSize = value;
+                //RecreateField();
                 Clear();
             }
         }
 
-        public int CellSize
+        public float CellSize
         {
             get { return Field.CellSize; }
             set
@@ -45,7 +41,7 @@ namespace Miner
             }
         }
 
-        public int CellBorderSize
+        public float CellBorderSize
         {
             get { return Field.BorderSize; }
             set
@@ -61,18 +57,17 @@ namespace Miner
             private set
             {
                 _field = value;
-                RecreateField();// + constructor
-                ReSize();
+                Clear();
+                //RecreateField();
+                //ReSize();
             }
         }
-        //TODO все данные поля должны храниться в поле!
         public Color BorderColor
         {
             get { return Field.BorderColor; }
             set
             {
                 Field.BorderColor = value;
-                //RecreateField(); -
             }
         }
 
@@ -82,7 +77,6 @@ namespace Miner
             set
             {
                 Field.StartFieldColor = value;
-                //RecreateField(); +
             }
         }
         public Color EndFieldColor
@@ -91,7 +85,6 @@ namespace Miner
             set
             {
                 Field.EndFieldColor = value;
-                //RecreateField(); +
             }
         }
 
@@ -102,22 +95,11 @@ namespace Miner
 
         private void RecreateField()
         {
-            //TODO тут только удаление и добавление контролов из Field, а так же подписывание на их евенты
-            //var steps = FieldSize.Height + FieldSize.Width - 1;
-            //var r = (EndFieldColor.R - StartFieldColor.R) / steps;
-            //var g = (EndFieldColor.G - StartFieldColor.G) / steps;
-            //var b = (EndFieldColor.B - StartFieldColor.B) / steps;
-            //Field.Cells = new Cell[FieldSize.Height, FieldSize.Width];
             Controls.Clear();
             for (var row = 0; row < FieldSize.Height; row++)
             {
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
-                    //var step = row + column;
-                    //Field.Cells[row, column] = new Cell(
-                    //    Color.FromArgb(StartFieldColor.R + r * step, StartFieldColor.G + g * step, StartFieldColor.B + b * step),
-                    //    Color.FromArgb(StartFieldColor.R + r * (step + 1), StartFieldColor.G + g * (step + 1), StartFieldColor.B + b * (step + 1)),
-                    //    BorderColor, CellBorderSize, CellSize, new Point(column, row));
                     Controls.Add(Field.Cells[row, column]);
                     Field.Cells[row, column].CellClick += Miner_CellClick;
                     Field.Cells[row, column].CellSelect += Miner_CellSelect;
@@ -143,7 +125,13 @@ namespace Miner
 
         private void ReSize()
         {
-            Size = new Size(FieldSize.Width * (CellSize + CellBorderSize) + CellBorderSize, FieldSize.Height * (CellSize + CellBorderSize) + CellBorderSize);
+            var width = FieldSize.Width * (CellSize + CellBorderSize) + CellBorderSize;
+            var height = FieldSize.Height * (CellSize + CellBorderSize) + CellBorderSize;
+            if (Size.Width != width || Size.Height != height)
+            {
+                Size = new Size((int)width, (int)height);
+            }
+            //RecreateField();
         }
 
         public void UnselectCell(int row, int column)
@@ -173,23 +161,47 @@ namespace Miner
             Field.Cells[row, column].Pressed = true;
         }
 
-        public void Clear()
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="mines"></param>
+        /// <param name="mine"></param>
+        /// <returns>Количество мин, для которых не хватило места на поле</returns>
+        public int AddMines(int mines, Mine mine)
         {
-            Field = new Field(FieldSize.Height, FieldSize.Width);
-            MinimumSize = new Size(FieldSize.Width * (20 + 0) + 0, FieldSize.Height * (20 + 0) + 0);
-            ReSize();
+            return Field.CreateMines(mines, mine);
         }
 
+        public void Clear()
+        {
+            ReSize();
+            RecreateField();
+        }
         protected override void OnSizeChanged(EventArgs e)
         {
-            var proportions = (double) (_fieldSize.Width*(CellSize + CellBorderSize) + CellBorderSize)/
-                              (_fieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
-
-            Size = Size.Width > Size.Height ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
-            var a = (int) ((double) (Size.Width + (FieldSize.Width - 1)*CellBorderSize)/FieldSize.Width);
-           
-            Field.SetCellSizes(a);
-            //MessageBox.Show($"{Size.Height} - {Size.Width} -> {a}");
+            
+            //отношение ширины поля к высоте
+            var proportions = (double) (Field.FieldSize.Width*(CellSize + CellBorderSize) + CellBorderSize) /
+                              (Field.FieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
+            //применяется наибольший размер с учётом пропорций
+            Size = Size.Width > Size.Height * proportions ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
+            //var newCellFullSize = ((Size.Width + (FieldSize.Width - 1)*CellBorderSize)/FieldSize.Width);
+            //var cellProportion = _userBorderSize / _userCellSize;
+            //var newCellSize = Size.Width / (FieldSize.Width * (1 + cellProportion) + cellProportion);
+            //var newBorderSize = (Size.Width - newCellSize * FieldSize.Width) / (FieldSize.Width + 1);
+            //var newBorderSize = cellProportion * newCellSize;//(Size.Width - newCellSize * FieldSize.Width) / (FieldSize.Width + 1);
+            //Field.BorderSize = newBorderSize;
+            var newCellSize = (Size.Width - CellBorderSize) / FieldSize.Width - CellBorderSize;
+            if (newCellSize != Field.CellSize)
+            {
+                Field.CellSize = newCellSize;
+            }
+            //var newCellFullSize = (float)Size.Width / FieldSize.Width;
+            //if (newCellFullSize != CellSize + 2 * CellBorderSize)
+            //{
+            //    Field.SetCellSizes(newCellFullSize);
+            //}
+            //ReSize();
             //if (Size.Width != FieldSize.Width*(CellBorderSize + CellSize) + CellBorderSize ||
             //    Size.Height != FieldSize.Height*(CellBorderSize + CellSize) + CellBorderSize)
             //{
