@@ -12,43 +12,77 @@ namespace Miner
 {
     public partial class Form1 : Form
     {
+        private Timer _timer = new Timer();
+        private int _time = 0;
+        private int _mines = 0;
         public Form1()
         {
             InitializeComponent();
             miner1.AddMines(10, new Mine(Properties.Resources.Mine, 1));
+            miner1.GameOver += Miner1_GameOver;
+            miner1.GameStateChanged += Miner1_GameStateChanged;
+            SizeChanged += Form1_SizeChanged;
+            label1.TextAlign = ContentAlignment.MiddleCenter;
+            label2.TextAlign = ContentAlignment.MiddleCenter;
+            _mines = miner1.Mines;
+            label2.Text = _mines.ToString();
+            _timer.Interval = 1000;
+            _timer.Tick += Timer_Tick;
+            miner1.CellMarkChanged += Miner1_CellMarkChanged;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Miner1_CellMarkChanged(Point position, MarkType type)
         {
-           // miner1.Size = new Size(miner1.Size.Width + 1, miner1.Size.Height);
-            //miner1.FieldSize = new Size(miner1.FieldSize.Width + 1, miner1.FieldSize.Height);
-           // miner1.Clear();
+            if (type == MarkType.Flag)
+            {
+                _mines--;
+            }
+            else
+            {
+                _mines++;
+            }
+            label2.Text = _mines.ToString();
         }
 
-        private void button1_Click_1(object sender, EventArgs e)
+        private void Timer_Tick(object sender, EventArgs e)
         {
-            //miner1.CellSize = 30;
-            //MessageBox.Show()
+            _time++;
+            label1.Text = _time.ToString();
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void Miner1_GameStateChanged(GameState state)
         {
-            //miner1.CellSize = 25;
+            if (state == GameState.Playing)
+            {
+                _time = 0;
+                _timer.Start();
+            }
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            //miner1.CellBorderSize = miner1.CellBorderSize == 0 ? 1 : 0;
+            if (Size.Width != Size.Height)
+            {
+                var newSize = Size.Width > Size.Height ? Size.Width : Size.Height;
+                Size = new Size(newSize, newSize);
+            }
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void Miner1_GameOver(Point lastPoint, bool win)
         {
-            //miner1.CellSize += 1;
+            _timer.Stop();
+            MessageBox.Show(win ? "Вы победили!" : "Вы проиграли.");
         }
 
-        private void button5_Click(object sender, EventArgs e)
+        private void новаяИграToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //miner1.AutoSize = miner1.AutoSize ? false : true;
+            miner1.NewGame();
+            _time = 0;
+        }
+
+        private void выходToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
         }
     }
 }

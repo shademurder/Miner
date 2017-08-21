@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace Miner
 {
@@ -13,8 +15,12 @@ namespace Miner
             Clear();
         }
 
-        private Size _fieldSize = new Size(9, 9);
         private Field _field = new Field(9, 9);
+        private int _errors = 1;
+        private int _userErrors = 1;
+        private GameState _gameState = GameState.NotStarted;
+        private readonly List<Mine> _mines = new List<Mine>();
+
 
         public Size FieldSize
         {
@@ -26,7 +32,6 @@ namespace Miner
             {
                 if (value.Height <= 0 || value.Width <= 0) return;
                 Field.FieldSize = value;
-                //RecreateField();
                 Clear();
             }
         }
@@ -40,7 +45,6 @@ namespace Miner
                 ReSize();
             }
         }
-
         public float CellBorderSize
         {
             get { return Field.BorderSize; }
@@ -58,8 +62,6 @@ namespace Miner
             {
                 _field = value;
                 Clear();
-                //RecreateField();
-                //ReSize();
             }
         }
         public Color BorderColor
@@ -88,9 +90,59 @@ namespace Miner
             }
         }
 
+        public double BrightnessCoefficient
+        {
+            get { return Field.BrightnessCoefficient; }
+            set { Field.BrightnessCoefficient = value; }
+        }
+
+        public int Errors
+        {
+            get
+            {
+                return _errors >= 0 ? _errors : 0;
+            }
+
+            set
+            {
+                if (_gameState == GameState.NotStarted)
+                {
+                    _userErrors = value;
+                }
+                _errors = value;
+                OnErrorsChanged(value);
+            }
+        }
+
+        public GameState GameState
+        {
+            get
+            {
+                return _gameState;
+            }
+
+            private set
+            {
+                _gameState = value;
+                OnGameStateChanged(value);
+            }
+        }
+
+        public int MaxMines => Field != null ? (int) (FieldSize.Width*FieldSize.Height*0.9) : 0;
+
+        public int GradientAngle { get; set; } = 45;
+
+        public int Mines => _mines?.Count ?? 0;
+
+
         public event Action<Point, bool> CellSelect;
         public event Action<Point, bool> CellClick;
         public event Action<Point, bool> CellPress;
+        public event Action<Point, MarkType> CellMarkChanged;
+        public event Action<Point, bool> CellBlockChanged;
+        public event Action<int> ErrorsChanged;
+        public event Action<GameState> GameStateChanged;
+        public event Action<Point, bool> GameOver;
 
 
         private void RecreateField()
@@ -101,26 +153,8 @@ namespace Miner
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
                     Controls.Add(Field.Cells[row, column]);
-                    Field.Cells[row, column].CellClick += Miner_CellClick;
-                    Field.Cells[row, column].CellSelect += Miner_CellSelect;
-                    Field.Cells[row, column].CellPress += Miner_CellPress;
                 }
             }
-        }
-
-        private void Miner_CellPress(Point position, bool flag)
-        {
-            CellPress?.Invoke(position, flag);
-        }
-
-        private void Miner_CellSelect(Point position, bool flag)
-        {
-            CellSelect?.Invoke(position, flag);
-        }
-
-        private void Miner_CellClick(Point position, bool flag)
-        {
-            CellClick?.Invoke(position, flag);
         }
 
         private void ReSize()
@@ -131,9 +165,9 @@ namespace Miner
             {
                 Size = new Size((int)width, (int)height);
             }
-            //RecreateField();
         }
 
+        //Инструменты внешнего управления
         public void UnselectCell(int row, int column)
         {
             Field.Cells[row, column].Selected = false;
@@ -161,55 +195,135 @@ namespace Miner
             Field.Cells[row, column].Pressed = true;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="mines"></param>
-        /// <param name="mine"></param>
-        /// <returns>Количество мин, для которых не хватило места на поле</returns>
-        public int AddMines(int mines, Mine mine)
+        public void AddMines(int mines, Mine mine)
         {
-            return Field.CreateMines(mines, mine);
+            for (var iter = 0; iter < mines; iter++)
+            {
+                if (_mines.Count < MaxMines)
+                {
+                    _mines.Add(mine);
+                }
+            }
+        }
+
+        public void ClearMines()
+        {
+            _mines.Clear();
         }
 
         public void Clear()
         {
             ReSize();
             RecreateField();
+            Field.CellClick += OnCellClick;
+            Field.CellSelect += OnCellSelect;
+            Field.CellPress += OnCellPress;
+            Field.FieldComplete += OnFieldComplete;
+            Field.CellMarkChanged += OnCellMarkChanged;
+            Field.CellBlockChanged += OnCellBlockChanged;
+            if (_gameState != GameState.Playing) return;
+            Field.HideField();
+            _errors = _userErrors;
+            GameState = GameState.NotStarted;
         }
+
+        public void NewGame()
+        {
+            //if (_gameState != GameState.Playing) return;
+            Field.HideField();
+            _errors = _userErrors;
+            GameState = GameState.NotStarted;
+        }
+
+
         protected override void OnSizeChanged(EventArgs e)
         {
             
             //отношение ширины поля к высоте
             var proportions = (double) (Field.FieldSize.Width*(CellSize + CellBorderSize) + CellBorderSize) /
-                              (Field.FieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
+                                      (Field.FieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
             //применяется наибольший размер с учётом пропорций
             Size = Size.Width > Size.Height * proportions ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
-            //var newCellFullSize = ((Size.Width + (FieldSize.Width - 1)*CellBorderSize)/FieldSize.Width);
-            //var cellProportion = _userBorderSize / _userCellSize;
-            //var newCellSize = Size.Width / (FieldSize.Width * (1 + cellProportion) + cellProportion);
-            //var newBorderSize = (Size.Width - newCellSize * FieldSize.Width) / (FieldSize.Width + 1);
-            //var newBorderSize = cellProportion * newCellSize;//(Size.Width - newCellSize * FieldSize.Width) / (FieldSize.Width + 1);
-            //Field.BorderSize = newBorderSize;
             var newCellSize = (Size.Width - CellBorderSize) / FieldSize.Width - CellBorderSize;
             if (newCellSize != Field.CellSize)
             {
                 Field.CellSize = newCellSize;
             }
-            //var newCellFullSize = (float)Size.Width / FieldSize.Width;
-            //if (newCellFullSize != CellSize + 2 * CellBorderSize)
-            //{
-            //    Field.SetCellSizes(newCellFullSize);
-            //}
-            //ReSize();
-            //if (Size.Width != FieldSize.Width*(CellBorderSize + CellSize) + CellBorderSize ||
-            //    Size.Height != FieldSize.Height*(CellBorderSize + CellSize) + CellBorderSize)
-            //{
-            //    ReSize();
-            //}
             base.OnSizeChanged(e);
         }
 
-        //что такое OnPaintBackground - когда применяется?
+        protected virtual void OnCellPress(Point position, bool flag)
+        {
+            if (GameState == GameState.NotStarted)
+            {
+                GameState = GameState.Playing;
+                Field.CreateMines(_mines.ToArray(), position);
+            }
+            if (Field.Cells[position.Y, position.X].Type == CellType.Empty &&
+                Field.Cells[position.Y, position.X].Weight == 0)
+            {
+                Field.OpenEmptyCells(position.Y, position.X);
+            }
+            if (Field.Cells[position.Y, position.X].Type == CellType.Mine)
+            {
+                Errors--;
+            }
+            if (_errors == 0)
+            {
+                _errors--;
+                Field.OpenField();
+                OnGameOver(position, false);
+            }
+            CellPress?.Invoke(position, flag);
+        }
+
+        protected virtual void OnCellSelect(Point position, bool flag)
+        {
+            CellSelect?.Invoke(position, flag);
+        }
+
+        protected virtual void OnCellClick(Point position, bool flag)
+        {
+            CellClick?.Invoke(position, flag);
+        }
+
+        protected virtual void OnFieldComplete(Point lastPoint)
+        {
+            if (_errors > 0)
+                OnGameOver(lastPoint, true);
+        }
+
+        protected virtual void OnGameOver(Point lastPoint, bool win)
+        {
+            if (GameState == GameState.Playing)
+            {
+                GameState = win ? GameState.Win : GameState.Lose;
+            }
+            else
+            {
+                return;
+            }
+            GameOver?.Invoke(lastPoint, win);
+        }
+
+        protected virtual void OnErrorsChanged(int errors)
+        {
+            ErrorsChanged?.Invoke(errors);
+        }
+
+        protected virtual void OnCellMarkChanged(Point position, MarkType type)
+        {
+            CellMarkChanged?.Invoke(position, type);
+        }
+
+        protected virtual void OnCellBlockChanged(Point position, bool flag)
+        {
+            CellBlockChanged?.Invoke(position, flag);
+        }
+
+        protected virtual void OnGameStateChanged(GameState gameState)
+        {
+            GameStateChanged?.Invoke(gameState);
+        }
     }
 }

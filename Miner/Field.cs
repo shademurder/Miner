@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Linq;
 
 namespace Miner
 {
@@ -16,7 +17,9 @@ namespace Miner
         private Color _borderColor = Color.Black;
         private Color _startFieldColor = Color.FromArgb(165, 185, 244);
         private Color _endFieldColor = Color.FromArgb(19, 65, 203);
+        private int _gradientAngle = 45;
         private readonly Random random = new Random();
+        private double _brightnessCoefficient = 1.3;
 
         public float CellSize
         {
@@ -37,7 +40,7 @@ namespace Miner
                 }
             }
         }
-        internal Cell[,] Cells { get; set; }
+        internal Cell[,] Cells { get; private set; }
    
         public float BorderSize
         {
@@ -124,6 +127,53 @@ namespace Miner
             }
         }
 
+        public int GradientAngle
+        {
+            get
+            {
+                return _gradientAngle;
+            }
+
+            set
+            {
+                _gradientAngle = value % 360;
+                for (var row = 0; row < Cells.GetLength(0); row++)
+                {
+                    for (var column = 0; column < Cells.GetLength(1); column++)
+                    {
+                        Cells[row, column].GradientAngle = _gradientAngle;
+                    }
+                }
+            }
+        }
+
+        public double BrightnessCoefficient
+        {
+            get
+            {
+                return _brightnessCoefficient;
+            }
+
+            set
+            {
+                _brightnessCoefficient = value;
+                for (var row = 0; row < Cells.GetLength(0); row++)
+                {
+                    for (var column = 0; column < Cells.GetLength(1); column++)
+                    {
+                        Cells[row, column].BrightnessCoefficient = value;
+                    }
+                }
+            }
+        }
+
+        public event Action<Point, bool> CellSelect;
+        public event Action<Point, bool> CellClick;
+        public event Action<Point, bool> CellPress;
+        public event Action<Point, MarkType> CellMarkChanged;
+        public event Action<Point, bool> CellBlockChanged;
+        public event Action<Point> FieldComplete;
+
         /// <summary>
         /// Пересоздаёт все ячейки поля
         /// </summary>
@@ -134,6 +184,15 @@ namespace Miner
             var r = (EndFieldColor.R - StartFieldColor.R) / steps;
             var g = (EndFieldColor.G - StartFieldColor.G) / steps;
             var b = (EndFieldColor.B - StartFieldColor.B) / steps;
+            if (recreate)
+            {
+                CellSelect = null;
+                CellClick = null;
+                CellPress = null;
+                CellMarkChanged = null;
+                CellBlockChanged = null;
+                FieldComplete = null;
+            }
             for (var row = 0; row < FieldSize.Height; row++)
             {
                 for (var column = 0; column < FieldSize.Width; column++)
@@ -147,6 +206,11 @@ namespace Miner
                             Color.FromArgb(StartFieldColor.R + r * (step + 1), StartFieldColor.G + g * (step + 1),
                                 StartFieldColor.B + b * (step + 1)),
                             BorderColor, BorderSize, CellSize, new Point(column, row));
+                        Cells[row, column].CellClick += OnCellClick;
+                        Cells[row, column].CellSelect += OnCellSelect;
+                        Cells[row, column].CellPress += OnCellPress;
+                        Cells[row, column].CellMarkChanged += OnCellMarkChanged;
+                        Cells[row, column].CellBlockChanged += OnCellBlockChanged;
                     }
                     else
                     {
@@ -161,25 +225,109 @@ namespace Miner
             }
         }
 
-        public int CreateMines(int mines, Mine mine)
+        public void OpenField()
         {
-            var emptyCells = GetEmptyCellCount();
-            //получить количество свободных от мин клеток
-            for(; mines > 0; mines--, emptyCells--)
+            for (var row = 0; row < FieldSize.Height; row++)
             {
-                if(!CreateMine(emptyCells, mine))
+                for (var column = 0; column < FieldSize.Width; column++)
+                {
+
+                    Cells[row, column].Blocked = false;
+                    if (!Cells[row, column].Pressed)
+                    {
+                        Cells[row, column].Pressed = true;
+                    }
+                    Cells[row, column].Blocked = true;
+                }
+            }
+        }
+
+        public void HideField()
+        {
+            for (var row = 0; row < FieldSize.Height; row++)
+            {
+                for (var column = 0; column < FieldSize.Width; column++)
+                {
+                    //Cells[row, column].Blocked = false;
+                    //if (Cells[row, column].Pressed)
+                    //{
+                    //    Cells[row, column].Pressed = false;
+                    //}
+                    //if (Cells[row, column].Type == CellType.Mine)
+                    //{
+                    //    Cells[row, column].Type = CellType.Empty;
+                    //}
+                    Cells[row, column].Clear();
+                }
+            }
+        }
+
+        public void BlockField(bool block)
+        {
+            for (var row = 0; row < FieldSize.Height; row++)
+            {
+                for (var column = 0; column < FieldSize.Width; column++)
+                {
+                    Cells[row, column].Blocked = block;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Циклическое раскрытие клеток с нулями
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="column"></param>
+        public void OpenEmptyCells(int row, int column)
+        {
+            if (Cells[row, column].Type != CellType.Empty) return;
+            Cells[row, column].Pressed = true;
+            if (Cells[row, column].Weight != 0) return;
+            for (var y = row - 1; y <= row + 1; y++)
+            {
+                for (var x = column - 1; x <= column + 1; x++)
+                {
+                    if (x < 0 || y < 0 || x >= Cells.GetLength(1) || y >= Cells.GetLength(0))
+                    {
+                        continue;
+                    }
+                    if (!Cells[y, x].Pressed)
+                    {
+                        OpenEmptyCells(y, x);
+                    }
+                }
+            }
+        }
+
+        public int CreateMines(Mine[] mines, Point pressedPoint)
+        {
+            if (mines == null) return 0;
+            //получать ещё и точку, на которую нажали, чтобы не поставить мину на неё
+            var emptyCells = GetEmptyCellCount() - 1;
+            //получить количество свободных от мин клеток
+            var notPlanted = mines.Length;
+            foreach (var mine in mines)
+            {
+                if (!CreateMine(emptyCells, mine, pressedPoint))
                 {
                     break;
                 }
+                notPlanted--;
+                emptyCells--;
             }
             CalculateField();
+            if (Cells[pressedPoint.Y, pressedPoint.X].Type == CellType.Empty &&
+                Cells[pressedPoint.Y, pressedPoint.X].Weight == 0)
+            {
+                OpenEmptyCells(pressedPoint.Y, pressedPoint.X);
+            }
             //вызвать метод рандомизации одной мины нужное количество раз
             //если мину поставить не удалось, значит поле заполнено
             //вернуть количество мин, которые не удалось поставить
-            return mines;
+            return notPlanted;
         }
 
-        private bool CreateMine(int emptyCells, Mine mine)
+        private bool CreateMine(int emptyCells, Mine mine, Point pressedPoint)
         {
             if(emptyCells == 0)
             {
@@ -190,6 +338,7 @@ namespace Miner
             {
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
+                    if(pressedPoint.X == column && pressedPoint.Y == row) continue;
                     if (Cells[row, column].Type != CellType.Mine)
                     {
                         if (randValue == 0)
@@ -201,22 +350,33 @@ namespace Miner
                     }
                 }
             }
-            
-            //срандомить число от 0 до количества свободных клеток
-            //пройти по циклу, уменьшая значение пустых клеток на 1 каждый раз, когда встречается незаминированная клетка
-            //если количество пустых клеток = 0, поставить в это место мину и вернуть true
-            //если цикл кончился,вернуть false
             return false;
         }
 
         private int GetEmptyCellCount()
         {
-            int count = 0;
+            var count = 0;
             for (var row = 0; row < FieldSize.Height; row++)
             {
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
                     if(Cells[row, column].Type != CellType.Mine)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
+        private int GetNonpressedCellCount()
+        {
+            var count = 0;
+            for (var row = 0; row < FieldSize.Height; row++)
+            {
+                for (var column = 0; column < FieldSize.Width; column++)
+                {
+                    if (!Cells[row, column].Pressed && Cells[row, column].Type != CellType.Mine)
                     {
                         count++;
                     }
@@ -253,16 +413,6 @@ namespace Miner
         private short GetCellWeight(int row, int column)
         {
             short weight = 0;
-            //for(var x = row < 0 ? 0 : row - 1; x < (row >= Cells.GetLength(0) - 1 ? Cells.GetLength(0) : row + 1); row++)
-            //{
-            //    for(var y = column < 0 ? 0 : column - 1; y < (column >= Cells.GetLength(1) - 1 ? Cells.GetLength(1) : column + 1); column++)
-            //    {
-            //        if(Cells[x, y].Type == CellType.Mine)
-            //        {
-            //            weight++;
-            //        }
-            //    }
-            //}
             for(var y = row - 1; y <= row + 1; y++)
             {
                 for(var x = column - 1; x <= column + 1; x++)
@@ -278,6 +428,41 @@ namespace Miner
                 }
             }
             return weight;
+        }
+
+        protected virtual void OnCellSelect(Point position, bool flag)
+        {
+            CellSelect?.Invoke(position, flag);
+        }
+
+        protected virtual void OnCellClick(Point position, bool flag)
+        {
+            CellClick?.Invoke(position, flag);
+        }
+
+        protected virtual void OnCellPress(Point position, bool flag)
+        {
+            if (GetNonpressedCellCount() == 0)
+            {
+                OnFieldComplete(position);
+                BlockField(true);
+            }
+            CellPress?.Invoke(position, flag);
+        }
+
+        protected virtual void OnFieldComplete(Point lastPoint)
+        {
+            FieldComplete?.Invoke(lastPoint);
+        }
+
+        protected virtual void OnCellMarkChanged(Point position, MarkType type)
+        {
+            CellMarkChanged?.Invoke(position, type);
+        }
+
+        protected virtual void OnCellBlockChanged(Point position, bool flag)
+        {
+            CellBlockChanged?.Invoke(position, flag);
         }
     }
 }

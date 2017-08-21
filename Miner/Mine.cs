@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace Miner
 {
@@ -18,7 +13,16 @@ namespace Miner
             _weight = weight;
         }
 
-        public Bitmap Image { get => _image; private set => _image = value; }
-        public short Weight { get => _weight; private set => _weight = value; }
+        public Bitmap Image
+        {
+            get { return _image; }
+            private set { _image = value; }
+        }
+
+        public short Weight
+        {
+            get { return _weight; }
+            private set { _weight = value; }
+        }
     }
 }
