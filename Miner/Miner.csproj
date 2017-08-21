@@ -63,6 +63,7 @@
     <Compile Include="Miner.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="MinesData.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

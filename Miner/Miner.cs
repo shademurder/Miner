@@ -243,7 +243,8 @@ namespace Miner
             var proportions = (double) (Field.FieldSize.Width*(CellSize + CellBorderSize) + CellBorderSize) /
                                       (Field.FieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
             //применяется наибольший размер с учётом пропорций
-            Size = Size.Width > Size.Height * proportions ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
+            Size = new Size(Size.Width, (int)(proportions * Size.Width));
+            //Size = Size.Width > Size.Height * proportions ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
             var newCellSize = (Size.Width - CellBorderSize) / FieldSize.Width - CellBorderSize;
             if (newCellSize != Field.CellSize)
             {
