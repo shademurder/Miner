@@ -1,16 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Miner
+﻿namespace Miner
 {
+    /// <summary>
+    /// Состояние игры
+    /// </summary>
     enum GameState
     {
+        /// <summary>
+        /// Победа
+        /// </summary>
         Win,
+        /// <summary>
+        /// Поражение
+        /// </summary>
         Lose,
+        /// <summary>
+        /// Игра началась
+        /// </summary>
         Playing,
+        /// <summary>
+        /// Игра не началась
+        /// </summary>
         NotStarted
     }
 }

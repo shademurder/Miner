@@ -5,6 +5,9 @@ using System.Windows.Forms;
 
 namespace Miner
 {
+    /// <summary>
+    /// Класс клетки поля
+    /// </summary>
     class Cell : UserControl
     {
         private float _borderSize;
@@ -27,6 +30,9 @@ namespace Miner
         private MarkType _markType = MarkType.Empty;
         private bool _blocked;
 
+        /// <summary>
+        /// Начальный цвет градиента для отображения клетки
+        /// </summary>
         public Color StartGradientColor
         {
             get { return _startGradientColor; }
@@ -36,6 +42,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Конечный цвет градиента для отображения клетки
+        /// </summary>
         public Color EndGradientColor
         {
             get { return _endGradientColor; }
@@ -45,6 +54,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Начальный цвет градиента для отображения клетки в момент нажатия на неё
+        /// </summary>
         public Color ClickStartGradientColor
         {
             get { return _clickStartGradientColor; }
@@ -54,6 +66,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Конечный цвет градиента для отображения клетки в момент нажатия на неё
+        /// </summary>
         public Color ClickEndGradientColor
         {
             get { return _clickEndGradientColor; }
@@ -63,6 +78,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Начальный цвет градиента для отображения клетки в момент наведения на неё курсора
+        /// </summary>
         public Color SelectStartGradientColor
         {
             get { return _selectStartGradientColor; }
@@ -72,6 +90,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Конечный цвет градиента для отображения клетки в момент наведения на неё курсора
+        /// </summary>
         public Color SelectEndGradientColor
         {
             get { return _selectEndGradientColor; }
@@ -81,6 +102,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Угол отображения градиента на клетке
+        /// </summary>
         public int GradientAngle
         {
             get { return _gradientAngle; }
@@ -91,6 +115,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Цвет границы ячейки
+        /// </summary>
         public Color BorderColor
         {
             get { return _borderColor; }
@@ -100,6 +127,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Размер границы ячейки
+        /// </summary>
         public float BorderSize
         {
             get { return _borderSize; }
@@ -107,9 +137,16 @@ namespace Miner
             {
                 if (value < 0) return;
                 _borderSize = value;
-                Size = new Size((int)Math.Ceiling((CellSize + 2 * value)), (int)Math.Ceiling(CellSize + 2 * value));
+                var newSize = new Size((int)Math.Ceiling((CellSize + 2 * value)), (int)Math.Ceiling(CellSize + 2 * value));
+                if(Size != newSize)
+                    Size = newSize;
+                else
+                    Refresh();
             }
         }
+        /// <summary>
+        /// Размер клетки без границ
+        /// </summary>
         public float CellSize
         {
             get { return _cellSize; }
@@ -117,22 +154,38 @@ namespace Miner
             {
                 if (value < 0) return;
                 _cellSize = value;
-                Size = new Size((int)Math.Ceiling((value + 2 * BorderSize)), (int)Math.Ceiling(value + 2 * BorderSize));
+                var newSize = new Size((int) Math.Ceiling((value + 2*BorderSize)),
+                    (int) Math.Ceiling(value + 2*BorderSize));
+                if(Size != newSize)
+                    Size = newSize;
+                else
+                    Refresh();
             }
         }
 
+        /// <summary>
+        /// Позиция клетки на поле
+        /// </summary>
         public Point Position { get; set; }
 
+        /// <summary>
+        /// Коэффициент яркости, применяемый при наведении на клетку
+        /// </summary>
         public double BrightnessCoefficient
         {
             get { return _brightnessCoefficient; }
             set
             {
                 _brightnessCoefficient = value;
+                _selectStartGradientColor = ChangeBrightness(_startGradientColor, BrightnessCoefficient);
+                _selectEndGradientColor = ChangeBrightness(_endGradientColor, BrightnessCoefficient);
                 Refresh();
             }
         }
 
+        /// <summary>
+        /// Определяет факт зажатия кнопки мыши над клеткой
+        /// </summary>
         public bool Clicked
         {
             get
@@ -148,6 +201,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Определяет факт нажатия на клетку
+        /// </summary>
         public bool Pressed
         {
             get
@@ -163,6 +219,9 @@ namespace Miner
                 Refresh();
             }
         }
+        /// <summary>
+        /// Определяет факт выделения клетки
+        /// </summary>
         public bool Selected
         {
             get
@@ -179,24 +238,37 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Вес клетки: количество мин вокруг
+        /// </summary>
         public short Weight
         {
             get { return _weight; }
             set { _weight = value; }
         }
 
+        /// <summary>
+        /// Тип клетки (мина или обычная клетка)
+        /// </summary>
         internal CellType Type
         {
             get { return _type; }
             set { _type = value; }
         }
 
+        /// <summary>
+        /// Мина, находящаяся в данной клетке
+        /// Используется, если тип клетки - мина
+        /// </summary>
         internal Mine Mine
         {
             get { return _mine; }
             set { _mine = value; }
         }
 
+        /// <summary>
+        /// Блокировка клетки
+        /// </summary>
         public bool Blocked
         {
             get
@@ -212,6 +284,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Тип метки на клетке (Флаг или знак вопроса)
+        /// </summary>
         internal MarkType MarkType
         {
             get
@@ -227,10 +302,25 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Происходит при выделении клетки
+        /// </summary>
         public event Action<Point, bool> CellSelect;
+        /// <summary>
+        /// Происходит при нажатии на клетку
+        /// </summary>
         public event Action<Point, bool> CellPress;
+        /// <summary>
+        /// Происходит при удержании нажатой кнопки мыши над клеткой
+        /// </summary>
         public event Action<Point, bool> CellClick;
+        /// <summary>
+        /// Происходит при изменении метки на клетке
+        /// </summary>
         public event Action<Point, MarkType> CellMarkChanged;
+        /// <summary>
+        /// Происходит при блокировке клетки
+        /// </summary>
         public event Action<Point, bool> CellBlockChanged;
 
         public Cell(Color startGradientColor, Color endGradientColor, Color borderColor, float borderSize, float size, Point position)
@@ -242,8 +332,12 @@ namespace Miner
             Position = position;
             Size = new Size((int)Math.Ceiling((CellSize + 2 * BorderSize)), (int)Math.Ceiling(CellSize + 2 * BorderSize));
             DoubleBuffered = true;
+            UpdateLocation();
         }
 
+        /// <summary>
+        /// Очищает клетку
+        /// </summary>
         public void Clear()
         {
             _blocked = false;
@@ -272,8 +366,8 @@ namespace Miner
                 GradientAngle);
             e.Graphics.FillRectangle(brush, BorderSize, BorderSize, CellSize, CellSize);
             var rectangle = new RectangleF(BorderSize + CellSize * 0.1F, BorderSize + CellSize * 0.1F, CellSize * 0.8F, CellSize * 0.8F);
-            var sf = StringFormat.GenericDefault;
-            sf.Alignment = StringAlignment.Center;
+            var stringFormat = StringFormat.GenericDefault;
+            stringFormat.Alignment = StringAlignment.Center;
             var font = new Font("Arial", _cellSize * 0.6F);
             if (Pressed)
             {
@@ -283,25 +377,32 @@ namespace Miner
                 }
                 else if(_type == CellType.Empty && _weight != 0)
                 {
-                    e.Graphics.DrawString(_weight.ToString(), font, new SolidBrush(Color.Red), rectangle, sf);
+                    e.Graphics.DrawString(_weight.ToString(), font, new SolidBrush(Color.Red), rectangle, stringFormat);
                 }
             }
             else
             {
                 if (MarkType == MarkType.Flag)
                 {
-                    var image = Properties.Resources.Flag1;
+                    var image = Properties.Resources.Flag;
                     e.Graphics.DrawImage(image, rectangle);
                 }
                 else if (MarkType == MarkType.Unknown)
                 {
-                    e.Graphics.DrawString("?", font, new SolidBrush(Color.Red), rectangle, sf);
+                    e.Graphics.DrawString("?", font, new SolidBrush(Color.Red), rectangle, stringFormat);
                 }
             }
             //e.Graphics.DrawRectangle(pen, 0, 0, (int)Math.Round(sizeF), (int)Math.Round(sizeF));
             base.OnPaint(e);
         }
 
+        /// <summary>
+        /// Применяются указанные цвета градиента к ячейке
+        /// Высчитываются цвета градиентов для состояния нажатия и наведения мыши
+        /// </summary>
+        /// <param name="startGradientColor">Начальный цвет градиента клетки</param>
+        /// <param name="endGradientColor">Конечный цвет градиента клетки</param>
+        /// <param name="refresh">Нужно ли обновлять внешний вид поля</param>
         public void ChangeColors(Color startGradientColor, Color endGradientColor, bool refresh)
         {
             _startGradientColor = startGradientColor;
@@ -319,12 +420,28 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Применить модификатор яркости к указанному цвету
+        /// </summary>
+        /// <param name="color">Цвет</param>
+        /// <param name="coefficient">Коэффициент яркости</param>
+        /// <returns></returns>
         private Color ChangeBrightness(Color color, double coefficient)
         {
             var r = color.R * coefficient;
             var g = color.G * coefficient;
             var b = color.B * coefficient;
             return Color.FromArgb((byte)(r >= 255 ? 255 : r), (byte)(g >= 255 ? 255 : g), (byte)(b >= 255 ? 255 : b));
+        }
+
+        /// <summary>
+        /// Перерассчитать положение клетки
+        /// </summary>
+        private void UpdateLocation()
+        {
+            var step = CellSize + BorderSize;
+            Location = new Point((int)(Position.X * step), (int)(Position.Y * step));
+            Refresh();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
@@ -394,9 +511,7 @@ namespace Miner
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            var step = CellSize + BorderSize;
-            Location = new Point((int)(Position.X * step), (int)(Position.Y * step));
-            Refresh();
+            UpdateLocation();
             base.OnSizeChanged(e);
         }
 

@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.miner1 = new Miner.Miner();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.играToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.новаяИграToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -39,29 +38,11 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.miner1 = new Miner();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
-            // 
-            // miner1
-            // 
-            this.miner1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.miner1.BorderColor = System.Drawing.Color.Black;
-            this.miner1.BrightnessCoefficient = 1.3D;
-            this.miner1.CellBorderSize = 1F;
-            this.miner1.CellSize = 27.22222F;
-            this.miner1.EndFieldColor = System.Drawing.Color.FromArgb(((int)(((byte)(19)))), ((int)(((byte)(65)))), ((int)(((byte)(203)))));
-            this.miner1.Errors = 1;
-            this.miner1.FieldSize = new System.Drawing.Size(9, 9);
-            this.miner1.GradientAngle = 45;
-            this.miner1.Location = new System.Drawing.Point(50, 55);
-            this.miner1.Name = "miner1";
-            this.miner1.Size = new System.Drawing.Size(255, 255);
-            this.miner1.StartFieldColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(185)))), ((int)(((byte)(244)))));
-            this.miner1.TabIndex = 0;
             // 
             // menuStrip1
             // 
@@ -87,36 +68,36 @@
             // новаяИграToolStripMenuItem
             // 
             this.новаяИграToolStripMenuItem.Name = "новаяИграToolStripMenuItem";
-            this.новаяИграToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.новаяИграToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
             this.новаяИграToolStripMenuItem.Text = "Новая игра";
             this.новаяИграToolStripMenuItem.Click += new System.EventHandler(this.новаяИграToolStripMenuItem_Click);
             // 
             // статистикаToolStripMenuItem
             // 
             this.статистикаToolStripMenuItem.Name = "статистикаToolStripMenuItem";
-            this.статистикаToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.статистикаToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
             this.статистикаToolStripMenuItem.Text = "Статистика";
             this.статистикаToolStripMenuItem.Click += new System.EventHandler(this.статистикаToolStripMenuItem_Click);
             // 
             // параметрыToolStripMenuItem
             // 
             this.параметрыToolStripMenuItem.Name = "параметрыToolStripMenuItem";
-            this.параметрыToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.параметрыToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
             this.параметрыToolStripMenuItem.Text = "Параметры";
             this.параметрыToolStripMenuItem.Click += new System.EventHandler(this.параметрыToolStripMenuItem_Click);
             // 
             // выходToolStripMenuItem
             // 
             this.выходToolStripMenuItem.Name = "выходToolStripMenuItem";
-            this.выходToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.выходToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
             this.выходToolStripMenuItem.Text = "Выход";
             this.выходToolStripMenuItem.Click += new System.EventHandler(this.выходToolStripMenuItem_Click);
             // 
             // pictureBox1
             // 
             this.pictureBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.pictureBox1.Image = global::Miner.Properties.Resources.Flag1;
-            this.pictureBox1.Location = new System.Drawing.Point(50, 319);
+            this.pictureBox1.Image = global::Miner.Properties.Resources.Timer;
+            this.pictureBox1.Location = new System.Drawing.Point(50, 320);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(25, 25);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -127,7 +108,7 @@
             // 
             this.pictureBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox2.Image = global::Miner.Properties.Resources.Mine;
-            this.pictureBox2.Location = new System.Drawing.Point(280, 319);
+            this.pictureBox2.Location = new System.Drawing.Point(280, 320);
             this.pictureBox2.Name = "pictureBox2";
             this.pictureBox2.Size = new System.Drawing.Size(25, 25);
             this.pictureBox2.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
@@ -138,7 +119,7 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(80, 325);
+            this.label1.Location = new System.Drawing.Point(80, 326);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(13, 13);
             this.label1.TabIndex = 4;
@@ -149,17 +130,33 @@
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
             this.label2.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label2.Location = new System.Drawing.Point(250, 326);
+            this.label2.Location = new System.Drawing.Point(250, 327);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(13, 13);
             this.label2.TabIndex = 5;
             this.label2.Text = "0";
             // 
+            // miner1
+            // 
+            this.miner1.BorderColor = System.Drawing.Color.Black;
+            this.miner1.BrightnessCoefficient = 1.3D;
+            this.miner1.CellBorderSize = 1F;
+            this.miner1.CellSize = 27.11111F;
+            this.miner1.EndFieldColor = System.Drawing.Color.FromArgb(((int)(((byte)(19)))), ((int)(((byte)(65)))), ((int)(((byte)(203)))));
+            this.miner1.Errors = 1;
+            this.miner1.FieldSize = new System.Drawing.Size(9, 9);
+            this.miner1.GradientAngle = 45;
+            this.miner1.Location = new System.Drawing.Point(50, 50);
+            this.miner1.Name = "miner1";
+            this.miner1.Size = new System.Drawing.Size(254, 254);
+            this.miner1.StartFieldColor = System.Drawing.Color.FromArgb(((int)(((byte)(165)))), ((int)(((byte)(185)))), ((int)(((byte)(244)))));
+            this.miner1.TabIndex = 0;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(359, 361);
+            this.ClientSize = new System.Drawing.Size(359, 362);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.pictureBox2);

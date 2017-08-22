@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Drawing;
-using System.Linq;
 
 namespace Miner
 {
+    /// <summary>
+    /// Класс игрового поля
+    /// </summary>
     class Field
     {
+        /// <summary>
+        /// Создание игрового поля
+        /// </summary>
+        /// <param name="rows">Количество строк</param>
+        /// <param name="columns">Количество колонок</param>
         public Field(int rows, int columns)
         {
             FieldSize = new Size(columns, rows);
@@ -21,6 +28,9 @@ namespace Miner
         private readonly Random random = new Random();
         private double _brightnessCoefficient = 1.3;
 
+        /// <summary>
+        /// Размер клеток без учёта границ на поле
+        /// </summary>
         public float CellSize
         {
             get
@@ -40,8 +50,14 @@ namespace Miner
                 }
             }
         }
+        /// <summary>
+        /// Массив клеток поля
+        /// </summary>
         internal Cell[,] Cells { get; private set; }
    
+        /// <summary>
+        /// Размер границ клеток на поле
+        /// </summary>
         public float BorderSize
         {
             get
@@ -64,6 +80,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Цвет границ клеток на поле
+        /// </summary>
         public Color BorderColor
         {
             get
@@ -84,6 +103,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Начальный цвет градиента на поле
+        /// </summary>
         public Color StartFieldColor
         {
             get
@@ -97,6 +119,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Конечный цвет градиента на поле
+        /// </summary>
         public Color EndFieldColor
         {
             get
@@ -111,6 +136,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Размер поля
+        /// </summary>
         public Size FieldSize
         {
             get
@@ -127,6 +155,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Угол отображения градиента на клетках поля
+        /// </summary>
         public int GradientAngle
         {
             get
@@ -147,6 +178,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Коэффициент яркости, применяемый при наведении на клетку
+        /// </summary>
         public double BrightnessCoefficient
         {
             get
@@ -167,16 +201,36 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Происходит при выделении какой-либо клетки на поле
+        /// </summary>
         public event Action<Point, bool> CellSelect;
+        /// <summary>
+        /// Происходит при удержании нажатой кнопки мыши над какой-либо клеткой на поле
+        /// </summary>
         public event Action<Point, bool> CellClick;
+        /// <summary>
+        /// Происходит при нажатии на какую-либо клетку на поле
+        /// </summary>
         public event Action<Point, bool> CellPress;
+        /// <summary>
+        /// Происходит при изменении метки на какой-либо клетке
+        /// </summary>
         public event Action<Point, MarkType> CellMarkChanged;
+        /// <summary>
+        /// Происходит при блокировке какой-либо клетки на поле
+        /// </summary>
         public event Action<Point, bool> CellBlockChanged;
+        /// <summary>
+        /// Происходит при открытии всех незаминированных клеток на поле
+        /// </summary>
         public event Action<Point> FieldComplete;
 
+
         /// <summary>
-        /// Пересоздаёт все ячейки поля
+        /// Переопределяет все ячейки поля
         /// </summary>
+        /// <param name="recreate">Флаг пересоздания клеток</param>
         public void RedefineField(bool recreate)
         {
             var steps = Cells.GetLength(0) + Cells.GetLength(1) - 1;
@@ -225,6 +279,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Открыть все клетки на поле
+        /// </summary>
         public void OpenField()
         {
             for (var row = 0; row < FieldSize.Height; row++)
@@ -242,26 +299,24 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Скрыть все клетки на поле
+        /// </summary>
         public void HideField()
         {
             for (var row = 0; row < FieldSize.Height; row++)
             {
                 for (var column = 0; column < FieldSize.Width; column++)
                 {
-                    //Cells[row, column].Blocked = false;
-                    //if (Cells[row, column].Pressed)
-                    //{
-                    //    Cells[row, column].Pressed = false;
-                    //}
-                    //if (Cells[row, column].Type == CellType.Mine)
-                    //{
-                    //    Cells[row, column].Type = CellType.Empty;
-                    //}
                     Cells[row, column].Clear();
                 }
             }
         }
 
+        /// <summary>
+        /// Заблокировать все клетки на поле
+        /// </summary>
+        /// <param name="block"></param>
         public void BlockField(bool block)
         {
             for (var row = 0; row < FieldSize.Height; row++)
@@ -274,10 +329,10 @@ namespace Miner
         }
 
         /// <summary>
-        /// Циклическое раскрытие клеток с нулями
+        /// Циклическое раскрытие клеток с нулевым весом
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="column"></param>
+        /// <param name="row">Номер строки от 0</param>
+        /// <param name="column">Номер колонки от 0</param>
         public void OpenEmptyCells(int row, int column)
         {
             if (Cells[row, column].Type != CellType.Empty) return;
@@ -299,12 +354,16 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Генерирует на поле нужное количество мин, не трогая клетку, на которую нажали
+        /// </summary>
+        /// <param name="mines">Мины</param>
+        /// <param name="pressedPoint">Нажатая клетка</param>
+        /// <returns>Количество мин, которые не удалось поставить (если не хватило места)</returns>
         public int CreateMines(Mine[] mines, Point pressedPoint)
         {
             if (mines == null) return 0;
-            //получать ещё и точку, на которую нажали, чтобы не поставить мину на неё
             var emptyCells = GetEmptyCellCount() - 1;
-            //получить количество свободных от мин клеток
             var notPlanted = mines.Length;
             foreach (var mine in mines)
             {
@@ -321,12 +380,16 @@ namespace Miner
             {
                 OpenEmptyCells(pressedPoint.Y, pressedPoint.X);
             }
-            //вызвать метод рандомизации одной мины нужное количество раз
-            //если мину поставить не удалось, значит поле заполнено
-            //вернуть количество мин, которые не удалось поставить
             return notPlanted;
         }
 
+        /// <summary>
+        /// Генерирует мину на поле
+        /// </summary>
+        /// <param name="emptyCells">Количество пустых клеток на поле</param>
+        /// <param name="mine">Мина</param>
+        /// <param name="pressedPoint">Нажатая кнопка</param>
+        /// <returns>Удалось ли поместить мину на поле (хватило ли места)</returns>
         private bool CreateMine(int emptyCells, Mine mine, Point pressedPoint)
         {
             if(emptyCells == 0)
@@ -353,6 +416,10 @@ namespace Miner
             return false;
         }
 
+        /// <summary>
+        /// Получает количество незаминированных клеток на поле
+        /// </summary>
+        /// <returns>Незаминированные клетки</returns>
         private int GetEmptyCellCount()
         {
             var count = 0;
@@ -369,6 +436,10 @@ namespace Miner
             return count;
         }
 
+        /// <summary>
+        /// Получает количество неоткрытых незаминированных клеток
+        /// </summary>
+        /// <returns></returns>
         private int GetNonpressedCellCount()
         {
             var count = 0;
@@ -385,17 +456,21 @@ namespace Miner
             return count;
         }
 
-        public bool SetMine(int row, int column, Mine mine)
+        /// <summary>
+        /// Устанавливает мину в указанное место на поле
+        /// </summary>
+        /// <param name="row">Номер строки от 0</param>
+        /// <param name="column">Номер колонки от 0</param>
+        /// <param name="mine">Мина</param>
+        private void SetMine(int row, int column, Mine mine)
         {
-            if(Cells.GetLength(0) <= row || row < 0 || Cells.GetLength(1) <= column || column < 0 || Cells[row, column].Type == CellType.Mine)
-            {
-                return false;
-            }
             Cells[row, column].Type = CellType.Mine;
             Cells[row, column].Mine = mine;
-            return true;
         }
 
+        /// <summary>
+        /// Рассчитывает веса (количество мин вокруг) всех клеток на поле
+        /// </summary>
         public void CalculateField()
         {
             for(var row = 0; row < Cells.GetLength(0); row++)
@@ -410,6 +485,12 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Рассчитывает количество мин вокруг указанной клетки
+        /// </summary>
+        /// <param name="row">Номер строки от 0</param>
+        /// <param name="column">Номер колонки от 0</param>
+        /// <returns>Количество мин вокруг клетки</returns>
         private short GetCellWeight(int row, int column)
         {
             short weight = 0;

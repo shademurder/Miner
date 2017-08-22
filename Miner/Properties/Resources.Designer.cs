@@ -63,9 +63,9 @@ namespace Miner.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap Flag1 {
+        internal static System.Drawing.Bitmap Flag {
             get {
-                object obj = ResourceManager.GetObject("Flag1", resourceCulture);
+                object obj = ResourceManager.GetObject("Flag", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -76,6 +76,16 @@ namespace Miner.Properties {
         internal static System.Drawing.Bitmap Mine {
             get {
                 object obj = ResourceManager.GetObject("Mine", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Timer {
+            get {
+                object obj = ResourceManager.GetObject("Timer", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

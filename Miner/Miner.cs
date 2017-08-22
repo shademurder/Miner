@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Linq;
 
 namespace Miner
 {
@@ -17,11 +16,20 @@ namespace Miner
 
         private Field _field = new Field(9, 9);
         private int _errors = 1;
+        /// <summary>
+        /// Количество допустимых ошибок, заданное пользователем
+        /// </summary>
         private int _userErrors = 1;
         private GameState _gameState = GameState.NotStarted;
+        /// <summary>
+        /// Список мин на поле
+        /// </summary>
         private readonly List<Mine> _mines = new List<Mine>();
 
 
+        /// <summary>
+        /// Размер поля
+        /// </summary>
         public Size FieldSize
         {
             get
@@ -36,6 +44,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Размер клеток без учёта границ на поле
+        /// </summary>
         public float CellSize
         {
             get { return Field.CellSize; }
@@ -45,6 +56,9 @@ namespace Miner
                 ReSize();
             }
         }
+        /// <summary>
+        /// Размер границ клеток на поле
+        /// </summary>
         public float CellBorderSize
         {
             get { return Field.BorderSize; }
@@ -55,6 +69,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Игровое поле
+        /// </summary>
         public Field Field
         {
             get { return _field; }
@@ -64,6 +81,9 @@ namespace Miner
                 Clear();
             }
         }
+        /// <summary>
+        /// Цвет границ клеток на поле
+        /// </summary>
         public Color BorderColor
         {
             get { return Field.BorderColor; }
@@ -73,6 +93,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Начальный цвет градиента на поле
+        /// </summary>
         public Color StartFieldColor
         {
             get { return Field.StartFieldColor; }
@@ -81,6 +104,9 @@ namespace Miner
                 Field.StartFieldColor = value;
             }
         }
+        /// <summary>
+        /// Конечный цвет градиента на поле
+        /// </summary>
         public Color EndFieldColor
         {
             get { return Field.EndFieldColor; }
@@ -90,12 +116,18 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Коэффициент яркости, применяемый при наведении на клетку
+        /// </summary>
         public double BrightnessCoefficient
         {
             get { return Field.BrightnessCoefficient; }
             set { Field.BrightnessCoefficient = value; }
         }
 
+        /// <summary>
+        /// Количество оставшихся допустимых ошибок
+        /// </summary>
         public int Errors
         {
             get
@@ -114,6 +146,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Состояние игры
+        /// </summary>
         public GameState GameState
         {
             get
@@ -128,23 +163,65 @@ namespace Miner
             }
         }
 
-        public int MaxMines => Field != null ? (int) (FieldSize.Width*FieldSize.Height*0.9) : 0;
+        /// <summary>
+        /// Максимально допустимое количество мин на поле (90% поля)
+        /// </summary>
+        public int MaxMines => Field != null ? (int)(FieldSize.Width * FieldSize.Height * 0.9) : 0;
 
-        public int GradientAngle { get; set; } = 45;
+        /// <summary>
+        /// Угол отображения градиента на клетках поля
+        /// </summary>
+        public int GradientAngle
+        {
+            get { return Field.GradientAngle; }
+            set { Field.GradientAngle = value; }
+        }
 
+        /// <summary>
+        /// Количество мин на поле
+        /// </summary>
         public int Mines => _mines?.Count ?? 0;
 
 
+        /// <summary>
+        /// Происходит при выделении какой-либо клетки на поле
+        /// </summary>
         public event Action<Point, bool> CellSelect;
+        /// <summary>
+        /// Происходит при удержании нажатой кнопки мыши над какой-либо клеткой на поле
+        /// </summary>
         public event Action<Point, bool> CellClick;
+        /// <summary>
+        /// Происходит при нажатии на какую-либо клетку на поле
+        /// </summary>
         public event Action<Point, bool> CellPress;
+        /// <summary>
+        /// Происходит при изменении метки на какой-либо клетке
+        /// </summary>
         public event Action<Point, MarkType> CellMarkChanged;
+        /// <summary>
+        /// Происходит при блокировке какой-либо клетки на поле
+        /// </summary>
         public event Action<Point, bool> CellBlockChanged;
+        /// <summary>
+        /// Происходит при изменении количества допустимых ошибок:
+        /// при попадании на мину или при ручном обновлении
+        /// </summary>
         public event Action<int> ErrorsChanged;
+        /// <summary>
+        /// Происходит при изменении состояния игры
+        /// </summary>
         public event Action<GameState> GameStateChanged;
+        /// <summary>
+        /// Происходит в конце игры:
+        /// если допущено максимальное количество ошибок или на поле открыты все незаминированные ячейки
+        /// </summary>
         public event Action<Point, bool> GameOver;
 
-
+        
+        /// <summary>
+        /// Переопределяются все контролы(ячейки) на поле
+        /// </summary>
         private void RecreateField()
         {
             Controls.Clear();
@@ -157,6 +234,9 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Перерассчёт размера поля
+        /// </summary>
         private void ReSize()
         {
             var width = FieldSize.Width * (CellSize + CellBorderSize) + CellBorderSize;
@@ -167,34 +247,91 @@ namespace Miner
             }
         }
 
+
         //Инструменты внешнего управления
+
+        /// <summary>
+        /// Отмена выделения клетки
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void UnselectCell(int row, int column)
         {
             Field.Cells[row, column].Selected = false;
         }
+        /// <summary>
+        /// Выделение клетки
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void SelectCell(int row, int column)
         {
             Field.Cells[row, column].Selected = true;
         }
 
+        /// <summary>
+        /// Отменяет наведение зажатой кнопки мыши над клеткой
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void UnClickCell(int row, int column)
         {
             Field.Cells[row, column].Clicked = false;
         }
+        /// <summary>
+        /// Наведение зажатой кнопки мыши над клеткой
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void ClickCell(int row, int column)
         {
             Field.Cells[row, column].Clicked = true;
         }
 
+        /// <summary>
+        /// Отменяет нажатие на клетку
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void UnpressCell(int row, int column)
         {
             Field.Cells[row, column].Pressed = false;
         }
+        /// <summary>
+        /// Нажатие на клетку
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
         public void PressCell(int row, int column)
         {
             Field.Cells[row, column].Pressed = true;
         }
 
+        /// <summary>
+        /// Отменяет блокировку клетки
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
+        public void UnblockCell(int row, int column)
+        {
+            
+        }
+        /// <summary>
+        /// Блокирует клетку
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
+        public void BlockCell(int row, int column)
+        {
+            
+        }
+
+        /// <summary>
+        /// Добавляет на поле указанную мину нужное количество раз
+        /// Не больше, чем 90% от области поля
+        /// </summary>
+        /// <param name="mines">Количество мин</param>
+        /// <param name="mine">Мина</param>
         public void AddMines(int mines, Mine mine)
         {
             for (var iter = 0; iter < mines; iter++)
@@ -206,12 +343,18 @@ namespace Miner
             }
         }
 
+        /// <summary>
+        /// Удаляет все мины из списка
+        /// </summary>
         public void ClearMines()
         {
             _mines.Clear();
         }
 
-        public void Clear()
+        /// <summary>
+        /// Переопределяет поле
+        /// </summary>
+        private void Clear()
         {
             ReSize();
             RecreateField();
@@ -222,11 +365,12 @@ namespace Miner
             Field.CellMarkChanged += OnCellMarkChanged;
             Field.CellBlockChanged += OnCellBlockChanged;
             if (_gameState != GameState.Playing) return;
-            Field.HideField();
-            _errors = _userErrors;
-            GameState = GameState.NotStarted;
+            NewGame();
         }
 
+        /// <summary>
+        /// Начало новой игры
+        /// </summary>
         public void NewGame()
         {
             //if (_gameState != GameState.Playing) return;
@@ -238,18 +382,23 @@ namespace Miner
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            
             //отношение ширины поля к высоте
-            var proportions = (double) (Field.FieldSize.Width*(CellSize + CellBorderSize) + CellBorderSize) /
-                                      (Field.FieldSize.Height*(CellSize + CellBorderSize) + CellBorderSize);
+            var proportions = (double)(Field.FieldSize.Width * (CellSize + CellBorderSize) + CellBorderSize) /
+                                      (Field.FieldSize.Height * (CellSize + CellBorderSize) + CellBorderSize);
             //применяется наибольший размер с учётом пропорций
-            Size = new Size(Size.Width, (int)(proportions * Size.Width));
-            //Size = Size.Width > Size.Height * proportions ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
+            if((int)(Field.FieldSize.Width * (CellSize + CellBorderSize) + CellBorderSize) != Size.Width ||
+                (int)(Field.FieldSize.Height * (CellSize + CellBorderSize) + CellBorderSize) != Size.Height)
+            Size = Size.Width > (Size.Height * proportions) ? new Size(Size.Width, (int)(Size.Width / proportions)) : new Size((int)(Size.Height * proportions), Size.Height);
+
+            //новый рассчётный размер клетки без учёта границ
             var newCellSize = (Size.Width - CellBorderSize) / FieldSize.Width - CellBorderSize;
             if (newCellSize != Field.CellSize)
             {
                 Field.CellSize = newCellSize;
+                Size = new Size(Field.Cells[FieldSize.Height - 1, FieldSize.Width - 1].Location.X + Field.Cells[FieldSize.Height - 1, FieldSize.Width - 1].Size.Width,
+                    Field.Cells[FieldSize.Height - 1, FieldSize.Width - 1].Location.Y + Field.Cells[FieldSize.Height - 1, FieldSize.Width - 1].Size.Height);
             }
+            Refresh();
             base.OnSizeChanged(e);
         }
 

@@ -2,17 +2,12 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
 
 namespace Miner
 {
     [Serializable]
-    class Player
+    public class Player
     {
-        private double _winRate = 0;
         private int _totalGames = 0;
         private int _winGames = 0;
         private Size _fieldSize = new Size(9, 9);
@@ -20,18 +15,110 @@ namespace Miner
         private List<MinesData> _mines = new List<MinesData>();
         private int _bestTime = 999;
 
-        public double WinRate { get => _winRate; set => _winRate = value; }
-        public int TotalGames { get => _totalGames; set => _totalGames = value; }
-        public int WinGames { get => _winGames; set => _winGames = value; }
-        public Size FieldSize { get => _fieldSize; set => _fieldSize = value; }
-        public int Errors { get => _errors; set => _errors = value; }
-        public List<MinesData> Mines { get => _mines; set => _mines = value; }
-        public int BestTime { get => _bestTime; set => _bestTime = value; }
+        /// <summary>
+        /// Процент побед
+        /// </summary>
+        public double WinRate => _totalGames == 0 ? 0 : (double)_winGames * 100 / _totalGames;
 
+        /// <summary>
+        /// Общее количество сыгранных игр
+        /// </summary>
+        public int TotalGames
+        {
+            get
+            {
+                return _totalGames;
+            }
 
-       
+            set
+            {
+                _totalGames = value;
+            }
+        }
 
-        //Статистика
-        //Параметры
+        /// <summary>
+        /// Количество победных игр
+        /// </summary>
+        public int WinGames
+        {
+            get
+            {
+                return _winGames;
+            }
+
+            set
+            {
+                _winGames = value;
+            }
+        }
+
+        /// <summary>
+        /// Размер игрового поля
+        /// </summary>
+        public Size FieldSize
+        {
+            get
+            {
+                return _fieldSize;
+            }
+
+            set
+            {
+                _fieldSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Количество допустимых ошибок
+        /// </summary>
+        public int Errors
+        {
+            get
+            {
+                return _errors;
+            }
+
+            set
+            {
+                _errors = value;
+            }
+        }
+
+        /// <summary>
+        /// Список данных о минах
+        /// </summary>
+        internal List<MinesData> Mines
+        {
+            get
+            {
+                return _mines;
+            }
+
+            set
+            {
+                _mines = value;
+            }
+        }
+
+        /// <summary>
+        /// Лушчее время прохождения
+        /// </summary>
+        public int BestTime
+        {
+            get
+            {
+                return _bestTime;
+            }
+
+            set
+            {
+                _bestTime = value;
+            }
+        }
+
+        /// <summary>
+        /// Общее количество мин
+        /// </summary>
+        public int TotalMines => Mines.Sum(data => data.MineCount);
     }
 }
