@@ -6,14 +6,14 @@ using System.IO;
 
 namespace Miner
 {
-    public partial class Form1 : Form
+    public partial class MinerForm : Form
     {
         private readonly Timer _timer = new Timer();
         private int _time;
         private int _mines;
         private Player _player = new Player();
 
-        public Form1()
+        public MinerForm()
         {
             InitializeComponent();
             miner1.GameOver += Miner1_GameOver;
@@ -37,7 +37,7 @@ namespace Miner
                 catch
                 {
                     //ошибка при десериализации данных игрока
-                    if(_player == null)
+                    if (_player == null)
                     {
                         _player = new Player();
                     }
@@ -45,14 +45,16 @@ namespace Miner
                 }
             }
             else
+            {
                 Save(_player);
+            }
             if (!loaded || _player.Mines.Count == 0)
             {
                 SetMines(10, new Mine(Properties.Resources.Mine, 1));
             }
 
             _mines = miner1.Mines;
-            label2.Text = _mines.ToString();
+            minesLeft.Text = _mines.ToString();
         }
 
         /// <summary>
@@ -172,18 +174,18 @@ namespace Miner
             {
                 _mines--;
             }
-            else
+            else if(type == MarkType.Empty)
             {
                 _mines++;
             }
-            label2.Text = _mines.ToString();
+            minesLeft.Text = _mines.ToString();
         }
 
         private void Timer_Tick(object sender, EventArgs e)
         {
             if(_time < 999)
             _time++;
-            label1.Text = _time.ToString();
+            timerValue.Text = _time.ToString();
         }
 
         private void Miner1_GameStateChanged(GameState state)
@@ -205,7 +207,10 @@ namespace Miner
 
         private void Miner1_GameOver(Point lastPoint, bool win)
         {
-            _timer.Stop();
+            if (_timer.Enabled)
+            {
+                _timer.Stop();
+            }
             AddGameData(_player, win, _time);
             Save(_player);
             MessageBox.Show(win ? "Вы победили!" : "Вы проиграли.");
@@ -216,27 +221,60 @@ namespace Miner
         private void новаяИграToolStripMenuItem_Click(object sender, EventArgs e)
         {
             miner1.NewGame();
-            _time = 0;
-            _mines = miner1.Mines;
+            if(_timer.Enabled)
+            {
+                _timer.Stop();
+            }
+            timerValue.Text = (_time = 0).ToString();
+            minesLeft.Text = (_mines = miner1.Mines).ToString();
         }
 
         private void выходToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (_timer.Enabled) _timer.Stop();
             Application.Exit();
         }
 
         private void статистикаToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            bool timerStart = _timer.Enabled;
+            if (timerStart)
+            {
+                _timer.Stop();
+            }
             var statisticsForm = new Statistics(_player);
             statisticsForm.ShowDialog();
+            if (timerStart)
+            {
+                _timer.Start();
+            }
         }
 
         private void параметрыToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            bool timerStart = _timer.Enabled;
+            if (timerStart)
+            {
+                _timer.Stop();
+            }
             var configForm = new Config(_player);
             configForm.ShowDialog();
-            Save(_player);
-            UpdateMiner(miner1, _player);
+            if(configForm.NeedUpdate)
+            {
+                Save(_player);
+                UpdateMiner(miner1, _player);
+                miner1.NewGame();
+                timerValue.Text = (_time = 0).ToString(); ;
+                minesLeft.Text = (_mines = miner1.Mines).ToString();
+            }
+            else
+            {
+                if (timerStart)
+                {
+                    _timer.Start();
+                }
+            }
+
         }
     }
 }

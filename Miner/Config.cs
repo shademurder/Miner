@@ -10,6 +10,7 @@ namespace Miner
     public partial class Config : Form
     {
         private Player _player;
+        public bool NeedUpdate = false;
         public Config(Player player)
         {
             InitializeComponent();
@@ -78,11 +79,13 @@ namespace Miner
             {
                 SetPlayer((int)minesValue.Value, new Size((int)widthValue.Value, (int)heightValue.Value));
             }
+            NeedUpdate = true;
             Close();
         }
 
         private void cancel_Click(object sender, EventArgs e)
         {
+            NeedUpdate = false;
             Close();
         }
 

@@ -215,6 +215,7 @@ namespace Miner
             {
                 if (_pressed == value || Blocked) return;
                 _pressed = value;
+                MarkType = MarkType.Empty;
                 OnCellPress(Position, _pressed);
                 Refresh();
             }
@@ -294,7 +295,7 @@ namespace Miner
                 return _markType;
             }
 
-            private set
+            set
             {
                 if (_markType == value || Blocked) return;
                 _markType = value;
@@ -356,11 +357,8 @@ namespace Miner
             var fullSize = CellSize + 2 * BorderSize;
             var borderBrush = new SolidBrush(BorderColor);
             e.Graphics.FillRectangle(borderBrush, 0, 0, fullSize, fullSize);
-            //e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, CellSize + BorderSize, CellSize + BorderSize));
-            //e.Graphics.DrawRectangle(pen, 0, 0, CellSize + BorderSize, CellSize + BorderSize);
             var state = Clicked && Selected || Pressed;
-            //var brush = new LinearGradientBrush(new PointF(0, 0), new PointF(sizeF, sizeF),
-            var brush = new LinearGradientBrush(new RectangleF(0, 0, CellSize, CellSize),//(0, 0, CellSize, CellSize)
+            var brush = new LinearGradientBrush(new RectangleF(0, 0, CellSize, CellSize),
                 state ? ClickStartGradientColor : Selected ? SelectStartGradientColor : StartGradientColor,
                 state ? ClickEndGradientColor : Selected ? SelectEndGradientColor : EndGradientColor, 
                 GradientAngle);
@@ -377,7 +375,35 @@ namespace Miner
                 }
                 else if(_type == CellType.Empty && _weight != 0)
                 {
-                    e.Graphics.DrawString(_weight.ToString(), font, new SolidBrush(Color.Red), rectangle, stringFormat);
+                    var numberColor = Color.Red;
+                    switch (_weight)
+                    {
+                        case 1:
+                            numberColor = Color.DodgerBlue;
+                            break;
+                        case 2:
+                            numberColor = Color.FromArgb(85, 153, 85);
+                            break;
+                        case 3:
+                            numberColor = Color.Red;
+                            break;
+                        case 4:
+                            numberColor = Color.DarkBlue;
+                            break;
+                        case 5:
+                            numberColor = Color.DarkRed;
+                            break;
+                        case 6:
+                            numberColor = Color.DarkMagenta;
+                            break;
+                        case 7:
+                            numberColor = Color.FromArgb(114, 14, 206);
+                            break;
+                        case 8:
+                            numberColor = Color.DarkOrange;
+                            break;
+                    }
+                    e.Graphics.DrawString(_weight.ToString(), font, new SolidBrush(numberColor), rectangle, stringFormat);
                 }
             }
             else
@@ -392,7 +418,6 @@ namespace Miner
                     e.Graphics.DrawString("?", font, new SolidBrush(Color.Red), rectangle, stringFormat);
                 }
             }
-            //e.Graphics.DrawRectangle(pen, 0, 0, (int)Math.Round(sizeF), (int)Math.Round(sizeF));
             base.OnPaint(e);
         }
 

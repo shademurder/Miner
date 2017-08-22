@@ -314,7 +314,7 @@ namespace Miner
         /// <param name="column">Номер колонки на поле от 0</param>
         public void UnblockCell(int row, int column)
         {
-            
+            Field.Cells[row, column].Blocked = false;
         }
         /// <summary>
         /// Блокирует клетку
@@ -323,7 +323,47 @@ namespace Miner
         /// <param name="column">Номер колонки на поле от 0</param>
         public void BlockCell(int row, int column)
         {
-            
+            Field.Cells[row, column].Blocked = true;
+        }
+
+        /// <summary>
+        /// Снимает маркер с клетки
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
+        public void UnMarkCell(int row, int column)
+        {
+            Field.Cells[row, column].MarkType = MarkType.Empty;
+        }
+        /// <summary>
+        /// Маркирует указанную клетку на поле следующим по очереди маркером
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
+        public void MarkCellNext(int row, int column)
+        {
+            if(Field.Cells[row, column].MarkType == MarkType.Empty)
+            {
+                Field.Cells[row, column].MarkType = MarkType.Flag;
+            }
+            else if(Field.Cells[row, column].MarkType == MarkType.Flag)
+            {
+                Field.Cells[row, column].MarkType = MarkType.Unknown;
+            }
+            else if (Field.Cells[row, column].MarkType == MarkType.Unknown)
+            {
+                Field.Cells[row, column].MarkType = MarkType.Empty;
+            }
+        }
+        /// <summary>
+        /// Маркирует клетку указанным маркером
+        /// </summary>
+        /// <param name="row">Номер строки на поле от 0</param>
+        /// <param name="column">Номер колонки на поле от 0</param>
+        /// <param name="type">Маркер</param>
+        public void MarkCell(int row, int column, MarkType type)
+        {
+            Field.Cells[row, column].MarkType = type;
         }
 
         /// <summary>
