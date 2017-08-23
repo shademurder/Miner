@@ -36,6 +36,9 @@ namespace Miner
                 Special.Checked = true;
             }
             minesValue.Maximum = (int)((int)heightValue.Value * (int)widthValue.Value * 0.9);
+            widthValue.Text = _player.FieldSize.Width.ToString();
+            heightValue.Text = _player.FieldSize.Height.ToString();
+            minesValue.Text = _player.TotalMines.ToString();
         }
 
         /// <summary>
