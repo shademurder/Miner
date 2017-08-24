@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -30,6 +31,7 @@ namespace Miner
         /// <summary>
         /// Размер поля
         /// </summary>
+        [Category("Внешний вид поля"), Description("Размер поля")]
         public Size FieldSize
         {
             get
@@ -47,6 +49,7 @@ namespace Miner
         /// <summary>
         /// Размер клеток без учёта границ на поле
         /// </summary>
+        [Category("Внешний вид поля"), Description("Размер клеток без учёта границ")]
         public float CellSize
         {
             get { return Field.CellSize; }
@@ -59,6 +62,7 @@ namespace Miner
         /// <summary>
         /// Размер границ клеток на поле
         /// </summary>
+        [Category("Внешний вид поля"), Description("Размер границ клеток на поле")]
         public float CellBorderSize
         {
             get { return Field.BorderSize; }
@@ -84,6 +88,7 @@ namespace Miner
         /// <summary>
         /// Цвет границ клеток на поле
         /// </summary>
+        [Category("Внешний вид поля"), Description("Цвет границ клеток на поле")]
         public Color BorderColor
         {
             get { return Field.BorderColor; }
@@ -96,6 +101,7 @@ namespace Miner
         /// <summary>
         /// Начальный цвет градиента на поле
         /// </summary>
+        [Category("Внешний вид поля"), Description("Начальный цвет градиента на поле")]
         public Color StartFieldColor
         {
             get { return Field.StartFieldColor; }
@@ -107,6 +113,7 @@ namespace Miner
         /// <summary>
         /// Конечный цвет градиента на поле
         /// </summary>
+        [Category("Внешний вид поля"), Description("Конечный цвет градиента на поле")]
         public Color EndFieldColor
         {
             get { return Field.EndFieldColor; }
@@ -119,6 +126,7 @@ namespace Miner
         /// <summary>
         /// Коэффициент яркости, применяемый при наведении на клетку
         /// </summary>
+        [Category("Внешний вид поля"), Description("Коэффициент яркости, применяемый при наведении на клетку")]
         public double BrightnessCoefficient
         {
             get { return Field.BrightnessCoefficient; }
@@ -126,8 +134,19 @@ namespace Miner
         }
 
         /// <summary>
+        /// Угол отображения градиента на клетках поля
+        /// </summary>
+        [Category("Внешний вид поля"), Description("Угол отображения градиента на клетках поля")]
+        public int GradientAngle
+        {
+            get { return Field.GradientAngle; }
+            set { Field.GradientAngle = value; }
+        }
+
+        /// <summary>
         /// Количество оставшихся допустимых ошибок
         /// </summary>
+        [Category("Особенности поля"), Description("Количество оставшихся допустимых ошибок")]
         public int Errors
         {
             get
@@ -149,6 +168,7 @@ namespace Miner
         /// <summary>
         /// Состояние игры
         /// </summary>
+        [Category("Особенности поля"), Description("Состояние игры")]
         public GameState GameState
         {
             get
@@ -166,56 +186,57 @@ namespace Miner
         /// <summary>
         /// Максимально допустимое количество мин на поле (90% поля)
         /// </summary>
+        [Category("Особенности поля"), Description("Максимально допустимое количество мин на поле (90% поля)")]
         public int MaxMines => Field != null ? (int)(FieldSize.Width * FieldSize.Height * 0.9) : 0;
-
-        /// <summary>
-        /// Угол отображения градиента на клетках поля
-        /// </summary>
-        public int GradientAngle
-        {
-            get { return Field.GradientAngle; }
-            set { Field.GradientAngle = value; }
-        }
 
         /// <summary>
         /// Количество мин на поле
         /// </summary>
+        [Category("Особенности поля"), Description("Количество мин на поле")]
         public int Mines => _mines?.Count ?? 0;
 
 
         /// <summary>
         /// Происходит при выделении какой-либо клетки на поле
         /// </summary>
+        [Category("Изменение состояния клетки"), Description("Выделение клетки")]
         public event Action<Point, bool> CellSelect;
         /// <summary>
         /// Происходит при удержании нажатой кнопки мыши над какой-либо клеткой на поле
         /// </summary>
+        [Category("Изменение состояния клетки"), Description("Удержание нажатой кнопки мыши над клеткой")]
         public event Action<Point, bool> CellClick;
         /// <summary>
         /// Происходит при нажатии на какую-либо клетку на поле
         /// </summary>
+        [Category("Изменение состояния клетки"), Description("Нажатие на клетку")]
         public event Action<Point, bool> CellPress;
         /// <summary>
         /// Происходит при изменении метки на какой-либо клетке
         /// </summary>
+        [Category("Изменение состояния клетки"), Description("Изменение метки на клетке")]
         public event Action<Point, MarkType> CellMarkChanged;
         /// <summary>
         /// Происходит при блокировке какой-либо клетки на поле
         /// </summary>
+        [Category("Изменение состояния клетки"), Description("Блокировка клетки")]
         public event Action<Point, bool> CellBlockChanged;
         /// <summary>
         /// Происходит при изменении количества допустимых ошибок:
         /// при попадании на мину или при ручном обновлении
         /// </summary>
+        [Category("Изменения в игровом процессе"), Description("Изменение количества оставшихся допустимых попыток")]
         public event Action<int> ErrorsChanged;
         /// <summary>
         /// Происходит при изменении состояния игры
         /// </summary>
+        [Category("Изменения в игровом процессе"), Description("Изменение состояния игры")]
         public event Action<GameState> GameStateChanged;
         /// <summary>
         /// Происходит в конце игры:
         /// если допущено максимальное количество ошибок или на поле открыты все незаминированные ячейки
         /// </summary>
+        [Category("Изменения в игровом процессе"), Description("Игра закончена")]
         public event Action<Point, bool> GameOver;
 
         
